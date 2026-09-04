@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Roboto } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
-import { shadcn } from '@clerk/ui/themes';
 import Navbar from '@/components/Navbar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from 'react-hot-toast';
@@ -29,7 +28,25 @@ export default function RootLayout({
         className={`${roboto.className} antialiased`}
         suppressHydrationWarning
       >
-        <ClerkProvider dynamic appearance={{ theme: shadcn }}>
+        <ClerkProvider
+          dynamic
+          appearance={{
+            variables: {
+              colorPrimary: '#1d4ed8',
+              colorBackground: '#ffffff',
+              colorText: '#0f172a',
+              colorInputBackground: '#ffffff',
+              colorInputText: '#0f172a',
+              borderRadius: '0.75rem',
+            },
+            elements: {
+              modalBackdrop: 'bg-black/60 backdrop-blur-sm',
+              modalContent: 'bg-white shadow-2xl rounded-2xl border border-slate-200 overflow-hidden',
+              card: 'bg-white',
+              cardBox: 'bg-white shadow-2xl rounded-2xl',
+            },
+          }}
+        >
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

@@ -1,5 +1,3 @@
-@import '@clerk/ui/themes/shadcn.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -88,3 +86,30 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #555; /* Thumb hover color */
 }
+
+/* Clerk Modal Solid Styling */
+.cl-modalBackdrop {
+  background-color: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.cl-modalContent {
+  background-color: #ffffff !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 1rem !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.cl-card,
+.cl-cardBox {
+  background-color: #ffffff !important;
+}
+
+.dark .cl-modalContent,
+.dark .cl-card,
+.dark .cl-cardBox {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
