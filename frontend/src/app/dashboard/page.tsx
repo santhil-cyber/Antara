@@ -1,43 +1,40 @@
+import React from 'react';
 import LiveTitle from '@/components/LiveTitle';
 import RealtimeList from '@/components/RealtimeList';
-import { currentUser } from '@clerk/nextjs/server';
-import React from 'react';
+import AdminLoginForm from '@/components/AdminLoginForm';
+import AdminHeader from '@/components/AdminHeader';
+import { verifyAdminAccess } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
-const isMockMode =
-  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.includes('example.com') ||
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith('mock_');
+export const metadata = {
+  title: 'Admin Dashboard | Antara',
+  description: 'Real-time incident feed, case management, and emergency response dashboard.',
+};
 
 async function Page() {
-  let user: any = null;
-  if (isMockMode) {
-    user = {
-      unsafeMetadata: { isAdmin: true },
-    };
-  } else {
-    try {
-      user = await currentUser();
-    } catch {
-      user = null;
-    }
-  }
+  const auth = await verifyAdminAccess();
 
-  if (!user?.unsafeMetadata?.isAdmin) {
+  if (!auth.isAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">Not Authorized</h2>
-        <p className="text-gray-600">
-          You must be logged in as an administrator to view the dashboard.
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] p-4 relative">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="w-full max-w-md relative z-10">
+          <AdminLoginForm isInline={true} redirectTo="/dashboard" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className=" flex flex-col justify-center mx-auto max-w-5xl w-full p-4">
-      <LiveTitle />
+    <div className="flex flex-col justify-center mx-auto max-w-5xl w-full p-4 sm:p-6">
+      <AdminHeader
+        authSource={auth.source}
+        adminName={auth.user?.fullName || 'Administrator'}
+      />
+      <div className="mb-4">
+        <LiveTitle />
+      </div>
       <RealtimeList />
     </div>
   );
