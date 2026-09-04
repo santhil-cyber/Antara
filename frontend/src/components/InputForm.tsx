@@ -56,9 +56,11 @@ const FormSchema = z.object({
 export function InputForm({
   setText,
   setTextGemma,
+  setFormData,
 }: {
   setText: (resText: string) => void;
   setTextGemma: (resText: string) => void;
+  setFormData?: (data: any) => void;
 }) {
   const { user } = useClerk();
 
@@ -105,22 +107,39 @@ export function InputForm({
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     try {
       setLoading(true);
-      const res = await axios.post('/api/generate-text', data);
-      // setResImage(res.data.url);
-      // console.log('Image generated:', res.data.url);
-      console.log('res:', res.data);
-      console.log('Text generated with gemini:', res.data.gemini_response);
-      console.log('Text generated with gemma:', res.data.gemma_response);
-      if (res.data.gemini_response && res.data.gemma_response) {
-        setText(res.data.gemini_response);
-        setTextGemma(res.data.gemma_response);
-        setLoading(false);
-      } else {
-        console.log('Text setting failed');
-        setLoading(false);
+      if (setFormData) {
+        setFormData(data);
+      }
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('antara_draft_form', JSON.stringify(data));
+        } catch {}
+      }
+
+      const name = data.name || 'Confidential Victim';
+      const phone = data.phone || 'Confidential Contact';
+      const loc = data.location ? `${data.location.lat}, ${data.location.lng}` : '28.6139, 77.2090';
+      const contact = Array.isArray(data.preferredContact) ? data.preferredContact.join(', ') : data.preferredContact || 'Phone';
+      const situation = data.currentSituation || 'Victim reports urgent domestic violence and requires immediate protection';
+      const culprit = data.culprit || 'Perpetrator exhibits aggressive threats';
+
+      const fallbackText = `URGENT DISTRESS REPORT: I (${name}) am reporting severe domestic violence. Situation: ${situation}. Perpetrator: ${culprit}. Immediate intervention requested at coordinates ${loc}. Contact via ${contact} (${phone}).`;
+
+      try {
+        const res = await axios.post('/api/generate-text', data);
+        const geminiText = res.data?.gemini_response || fallbackText;
+        const gemmaText = res.data?.gemma_response || fallbackText;
+
+        setText(geminiText);
+        setTextGemma(gemmaText);
+      } catch (apiErr) {
+        console.warn('API text generation error, using local fallback:', apiErr);
+        setText(fallbackText);
+        setTextGemma(fallbackText);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Submit error:', e);
+    } finally {
       setLoading(false);
     }
   }

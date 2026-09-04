@@ -30,46 +30,68 @@ const FormSchema = z.object({
     .min(3, { message: 'Please specify the image prompt.' }),
 });
 
+const DEFAULT_PRESET_IMAGES = [
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80',
+];
+
 export default function ImageGen({
   text,
   textGemma,
   setResImage,
+  setText,
 }: {
   text: string;
   textGemma: string;
   setResImage: (resImage: string) => void;
+  setText?: (text: string) => void;
 }) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      generatedText: text || '',
-      imagePrompt: '',
+      generatedText: text || textGemma || '',
+      imagePrompt: 'Peaceful Nature Sunset',
     },
   });
 
-  const [imageOptions, setImageOptions] = useState<string[] | null>(null); // To hold the array of image URLs
-  const [selectedImage, setSelectedImage] = useState<string | null>(null); // To store the selected image
-  const [isLoading, setIsLoading] = useState<boolean>(false); // Loading state for images
-  const [selectedText, setSelectedText] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>(''); // Default model
+  const [imageOptions, setImageOptions] = useState<string[]>(DEFAULT_PRESET_IMAGES);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedText, setSelectedText] = useState<string>(text || textGemma || '');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini');
+
+  // Keep selectedText in sync if text arrives later
+  React.useEffect(() => {
+    if (text && !selectedText) {
+      setSelectedText(text);
+      form.setValue('generatedText', text);
+    }
+  }, [text]);
 
   const promptSuggestions = [
     'Good Morning',
-    'Good Night',
-    'Sunset',
-    'Mountains',
-    'Ocean',
+    'Sunset Coast',
+    'Mountain Peak',
+    'Serene Forest',
+    'Skyline',
   ];
+
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-    setIsLoading(true); // Start loading state
+    setIsLoading(true);
     try {
-      const res = await axios.post('/api/generate-image', data);
-      console.log('Image options generated:', res.data.images); // Assuming API returns images array
-      setImageOptions(res.data.images); // Set multiple image options
+      const res = await axios.post('/api/generate-image', {
+        ...data,
+        generatedText: selectedText || data.generatedText,
+      });
+      if (res.data.images && res.data.images.length > 0) {
+        setImageOptions(res.data.images);
+      }
     } catch (error) {
       console.error('Error generating images:', error);
     } finally {
-      setIsLoading(false); // End loading state
+      setIsLoading(false);
     }
   };
 
@@ -78,75 +100,97 @@ export default function ImageGen({
   };
 
   const handleImageSelect = (imageUrl: string) => {
-    setSelectedImage(imageUrl); // Set the selected image as final
-    setResImage(imageUrl); // Update the parent component with the final image URL
+    setSelectedImage(imageUrl);
+    setResImage(imageUrl);
+    const finalTxt = selectedText || text || textGemma || '';
+    if (setText && finalTxt) {
+      setText(finalTxt);
+    }
   };
 
-  const handleTextOptionClick = (text: string) => {
-    setSelectedText(text); // Set the selected text
-    if (text === textGemma) {
-      setSelectedModel('gemma'); // Set the model to Gemma
-    } else {
-      setSelectedModel('gemini'); // Set the model to Gemini
+  const handleTextOptionClick = (textOption: string) => {
+    setSelectedText(textOption);
+    if (setText) {
+      setText(textOption);
     }
-    form.setValue('generatedText', text); // Update the form field with the selected text
+    if (textOption === textGemma) {
+      setSelectedModel('gemma');
+    } else {
+      setSelectedModel('gemini');
+    }
+    form.setValue('generatedText', textOption);
   };
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="max-w-4xl mx-auto space-y-9 w-full"
+        className="max-w-4xl mx-auto space-y-7 w-full"
       >
         <FormField
           control={form.control}
           name="generatedText"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Generated Text</FormLabel>
-              <FormControl>
-                {!selectedText ? (
-                  <div className="space-x-2 flex items-center w-full ">
-                    {[text, textGemma].map((textOption, index) => (
-                      <div
-                        key={index}
-                        onClick={() => handleTextOptionClick(textOption)}
-                        className="cursor-pointer w-full bg-slate-200 p-2 rounded-md hover:bg-slate-300"
-                      >
-                        <div className="flex flex-col items-center pt-4 justify-between h-[330px]">
-                          <span>{textOption}</span>
-                          <span
-                            className={`${
-                              textOption === textGemma
-                                ? 'bg-gradient-to-tr from-orange-500 to-orange-300 text-white'
-                                : 'bg-gradient-to-tr from-blue-500 to-blue-400 text-white'
-                            } text-xs rounded-full py-1 px-2 max-w-[60px] mt-3`}
-                          >
-                            {textOption === textGemma ? 'Gemma' : 'Gemini'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+              <div className="flex items-center justify-between mb-2">
+                <FormLabel className="text-base font-semibold">
+                  Distress Report Narrative
+                </FormLabel>
+                <div className="flex items-center gap-2 font-medium text-slate-600 dark:text-slate-400 text-xs">
+                  <SparklesIcon size={14} className="text-blue-500" />
+                  <span>AI Steganography Ready</span>
+                </div>
+              </div>
+
+              {/* Model Choice Pills */}
+              {text && textGemma && text !== textGemma && (
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div
+                    onClick={() => handleTextOptionClick(text)}
+                    className={`cursor-pointer p-3 rounded-xl border transition-all text-xs ${
+                      selectedModel === 'gemini'
+                        ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/40 shadow-sm ring-1 ring-blue-500'
+                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-blue-600 dark:text-blue-400">Gemini Detailed</span>
+                      <span className="text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">Standard</span>
+                    </div>
+                    <p className="line-clamp-3 text-slate-600 dark:text-slate-300">{text}</p>
                   </div>
-                ) : (
-                  <Textarea {...field} value={selectedText} rows={8} />
-                )}
-              </FormControl>
-              {selectedText && (
-                <div className="flex items-center gap-2 font-medium text-slate-700 float-right text-sm">
-                  <SparklesIcon size={18} />
-                  <h1>
-                    Generated with{' '}
-                    <Link
-                      href={'https://gemini.google.com/'}
-                      target="_blank"
-                      className="underline underline-offset-2 text-blue-600"
-                    >
-                      {selectedModel === 'gemma' ? 'Gemma' : 'Gemini'}
-                    </Link>
-                  </h1>
+
+                  <div
+                    onClick={() => handleTextOptionClick(textGemma)}
+                    className={`cursor-pointer p-3 rounded-xl border transition-all text-xs ${
+                      selectedModel === 'gemma'
+                        ? 'border-orange-500 bg-orange-50/60 dark:bg-orange-950/40 shadow-sm ring-1 ring-orange-500'
+                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-orange-600 dark:text-orange-400">Gemma Concise</span>
+                      <span className="text-[10px] bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">Short</span>
+                    </div>
+                    <p className="line-clamp-3 text-slate-600 dark:text-slate-300">{textGemma}</p>
+                  </div>
                 </div>
               )}
+
+              <FormControl>
+                <Textarea
+                  {...field}
+                  value={selectedText}
+                  onChange={(e) => {
+                    setSelectedText(e.target.value);
+                    field.onChange(e);
+                    if (setText) setText(e.target.value);
+                  }}
+                  rows={6}
+                  placeholder="Review or customize the distress text report before embedding into photo..."
+                  className="font-mono text-sm leading-relaxed"
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

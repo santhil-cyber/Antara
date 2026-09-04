@@ -241,6 +241,20 @@ export default function RealtimeList() {
 
   React.useEffect(() => {
     fetchData();
+
+    const handleStorage = () => {
+      fetchData();
+    };
+
+    window.addEventListener('storage', handleStorage);
+    const timer = setInterval(() => {
+      fetchData();
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(timer);
+    };
   }, [fetchData]);
 
   const table = useReactTable({

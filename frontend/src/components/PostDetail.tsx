@@ -41,18 +41,28 @@ function PostDetail({ id }: { id: string }) {
     const fetchPostById = async () => {
       try {
         const response = await fetch(`/api/postbyid/${id}`);
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch post');
+        if (response.ok) {
+          const data = await response.json();
+          if (data && (data._id || data.Name)) {
+            setPost(data);
+            return;
+          }
         }
+      } catch {}
 
-        const data = await response.json();
-        setPost(data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'An unknown error occurred'
-        );
+      // Fallback to client localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const local = JSON.parse(localStorage.getItem('antara_user_posts') || '[]');
+          const found = local.find((p: any) => p._id === id || p.id === id);
+          if (found) {
+            setPost(found);
+            return;
+          }
+        } catch {}
       }
+
+      setError('Post details not found');
     };
 
     fetchPostById();
