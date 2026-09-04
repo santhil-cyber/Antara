@@ -6,33 +6,35 @@ interface GenerateImageRequestData {
   imagePrompt: string;
 }
 
+const fallbackImages = [
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80',
+];
+
 export async function POST(req: Request) {
   try {
     const data: GenerateImageRequestData = await req.json();
-    console.log('Received data:', data);
 
-    // Mocking the image generation API response with multiple images
-    const res = await axios.post(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/generate-image`,
-      { prompt: data.imagePrompt }
-    );
-    // const res = {
-    //   data: {
-    //     image_urls: [
-    //       'https://images.pexels.com/photos/1133957/pexels-photo-1133957.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    //       'https://images.pexels.com/photos/247599/pexels-photo-247599.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    //       'https://img-cdn.pixlr.com/image-generator/history/65bb506dcb310754719cf81f/ede935de-1138-4f66-8ed7-44bd16efc709/small.webp',
-    //     ],
-    //   },
-    // };
-    // console.log('Image Generation /api/generate-image:', res.data);
-    const imageUrls = res.data.image_urls; // Array of image URLs
-    return NextResponse.json({ images: imageUrls }, { status: 200 });
+    if (process.env.NEXT_PUBLIC_BACKEND_URL) {
+      try {
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/generate-image`,
+          { prompt: data.imagePrompt },
+          { timeout: 4000 }
+        );
+        if (res.data?.image_urls && res.data.image_urls.length > 0) {
+          return NextResponse.json({ images: res.data.image_urls }, { status: 200 });
+        }
+      } catch (backendErr) {
+        console.warn('Backend image service unreachable, using fallback covers');
+      }
+    }
+
+    return NextResponse.json({ images: fallbackImages }, { status: 200 });
   } catch (error) {
-    console.error('Image generation failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate images' },
-      { status: 500 }
-    );
+    console.error('Image generation failed, returning fallback images:', error);
+    return NextResponse.json({ images: fallbackImages }, { status: 200 });
   }
 }

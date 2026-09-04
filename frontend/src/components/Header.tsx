@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import React from 'react';
 import banner from '../assets/banner.png';
 
@@ -20,12 +21,16 @@ function Header() {
           </p>
 
           <div className="flex items-center gap-4">
-            <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-lg text-white rounded-lg shadow-md transform hover:scale-105 duration-200 ease-in-out font-semibold">
-              Register
-            </button>
-            <button className="px-6 py-3 text-lg text-blue-700 rounded-lg border border-blue-700 shadow-md transform hover:scale-105 hover:bg-blue-700 hover:text-white duration-200 ease-in-out font-semibold">
-              Report Now
-            </button>
+            <Link href="/sign-up">
+              <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-lg text-white rounded-lg shadow-md transform hover:scale-105 duration-200 ease-in-out font-semibold cursor-pointer">
+                Register
+              </button>
+            </Link>
+            <Link href="/create-post">
+              <button className="px-6 py-3 text-lg text-blue-700 rounded-lg border border-blue-700 shadow-md transform hover:scale-105 hover:bg-blue-700 hover:text-white duration-200 ease-in-out font-semibold cursor-pointer">
+                Report Now
+              </button>
+            </Link>
           </div>
         </div>
         <Image

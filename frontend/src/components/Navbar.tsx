@@ -33,18 +33,16 @@ function Navbar() {
         >
           Home
         </Link>
-        {!user?.unsafeMetadata.isAdmin && (
-          <Link
-            href="/create-post"
-            className={`${
-              isActive('/create-post')
-                ? 'text-blue-700 font-semibold'
-                : 'hover:text-blue-700'
-            } transition-colors duration-200`}
-          >
-            Create Post
-          </Link>
-        )}
+        <Link
+          href="/create-post"
+          className={`${
+            isActive('/create-post')
+              ? 'text-blue-700 font-semibold'
+              : 'hover:text-blue-700'
+          } transition-colors duration-200`}
+        >
+          Create Post
+        </Link>
         {(user?.unsafeMetadata as { isAdmin: boolean })?.isAdmin && (
           <Link
             href="/dashboard"
