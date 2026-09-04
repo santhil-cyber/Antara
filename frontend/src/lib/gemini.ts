@@ -5,8 +5,13 @@ const OPENROUTER_API_KEY =
 
 export const GEMINI_FLASH_MODEL = 'google/gemini-2.5-flash';
 
-export async function generateWithGemini25Flash(
-  prompt: string,
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export async function generateChatWithGemini25Flash(
+  conversationMessages: ChatMessage[],
   systemPrompt?: string
 ): Promise<string> {
   const messages: Array<{ role: string; content: string }> = [];
@@ -18,17 +23,14 @@ export async function generateWithGemini25Flash(
     });
   }
 
-  messages.push({
-    role: 'user',
-    content: prompt,
-  });
+  messages.push(...conversationMessages);
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${OPENROUTER_API_KEY}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:3000',
+      'HTTP-Referer': 'https://antara-cyber.vercel.app',
       'X-Title': 'Antara AI',
     },
     body: JSON.stringify({
@@ -44,4 +46,11 @@ export async function generateWithGemini25Flash(
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content || '';
+}
+
+export async function generateWithGemini25Flash(
+  prompt: string,
+  systemPrompt?: string
+): Promise<string> {
+  return generateChatWithGemini25Flash([{ role: 'user', content: prompt }], systemPrompt);
 }
