@@ -1,11 +1,16 @@
 'use client';
 import React from 'react';
-import { Player } from '@lordicon/react';
+import dynamic from 'next/dynamic';
 
 import ICON from '../assets/liveicon.json';
 
+const Player = dynamic(
+  () => import('@lordicon/react').then((mod) => mod.Player),
+  { ssr: false }
+);
+
 function LiveTitle() {
-  const playerRef = React.useRef<Player>(null);
+  const playerRef = React.useRef<any>(null);
   React.useEffect(() => {
     playerRef.current?.playFromBeginning();
   }, []);

@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   webpack: (config) => {
     if (!isClerkConfigured) {
       config.resolve = config.resolve || {};

@@ -3,6 +3,8 @@ import RealtimeList from '@/components/RealtimeList';
 import { currentUser } from '@clerk/nextjs/server';
 import React from 'react';
 
+export const dynamic = 'force-dynamic';
+
 const isMockMode =
   !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.includes('example.com') ||
