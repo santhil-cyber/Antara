@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Loader2,
   MoreHorizontal,
+  RefreshCw,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -129,6 +130,7 @@ export const columns: ColumnDef<any>[] = [
     enableHiding: false,
     cell: ({ row }) => {
       const post = row.original;
+      const postId = post._id || post.id || '';
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -140,13 +142,13 @@ export const columns: ColumnDef<any>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(post._id)}
+              onClick={() => navigator.clipboard.writeText(postId)}
             >
               Copy ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <Link href={`/post/${post._id}`}>View Details</Link>
+              <Link href={`/post/${postId}`}>View Details</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </DropdownMenuContent>
@@ -168,42 +170,78 @@ export default function RealtimeList() {
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
-  React.useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/getPosts');
+      let serverPosts: any[] = [];
       try {
-        const response = await fetch('/api/getPosts');
-        const result = await response.json();
-        console.log(result);
-        if (!Array.isArray(result)) {
-          setData([]);
-          return;
-        }
-        const enrichedData = await Promise.all(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          result.map(async (post: any) => {
-            const clenLoc = cleanText(post.Location);
-            const [latitude, longitude] = clenLoc.split(',').map(Number);
-            console.log(latitude, longitude);
-            const state = await fetchCityName(latitude, longitude);
-
-            return {
-              ...post,
-              state: state || 'Unknown Location', // Fallback if no city is found
-            };
-          })
-        );
-
-        setData(enrichedData);
-        // setData(result);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
+        serverPosts = await response.json();
+      } catch {
+        serverPosts = [];
       }
-    };
 
-    fetchData();
+      if (!Array.isArray(serverPosts)) {
+        serverPosts = [];
+      }
+
+      // Check for user-submitted posts stored in browser localStorage
+      let localUserPosts: any[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('antara_user_posts');
+          if (stored) {
+            localUserPosts = JSON.parse(stored);
+          }
+        } catch {}
+      }
+
+      // Merge local user submissions with server posts, deduplicating by ID
+      const seenIds = new Set<string>();
+      const combined: any[] = [];
+
+      for (const item of [...localUserPosts, ...serverPosts]) {
+        const id = item._id || item.id || Math.random().toString();
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          combined.push({
+            ...item,
+            _id: id,
+          });
+        }
+      }
+
+      const enrichedData = await Promise.all(
+        combined.map(async (post: any) => {
+          let state = post.state;
+          if (!state && post.Location && typeof post.Location === 'string' && post.Location.includes(',')) {
+            try {
+              const clenLoc = cleanText(post.Location);
+              const [latitude, longitude] = clenLoc.split(',').map(Number);
+              if (!isNaN(latitude) && !isNaN(longitude)) {
+                state = await fetchCityName(latitude, longitude);
+              }
+            } catch {}
+          }
+
+          return {
+            ...post,
+            state: state || 'Delhi, India',
+          };
+        })
+      );
+
+      setData(enrichedData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const table = useReactTable({
     data,
@@ -243,13 +281,23 @@ export default function RealtimeList() {
           }
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchData()}
+            className="gap-1.5 text-xs font-semibold h-9"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
+            Refresh Feed
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-9">
+                Columns <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
             {table
               .getAllColumns()
               .filter((column) => column.getCanHide())
@@ -267,8 +315,9 @@ export default function RealtimeList() {
                   </DropdownMenuCheckboxItem>
                 );
               })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>

@@ -1,24 +1,35 @@
 import axios from 'axios';
 import { NextResponse } from 'next/server';
+import { savePost } from '@/lib/posts-store';
 
 export async function POST(req: Request) {
   try {
     const data = await req.json();
 
+    // 1. Save locally in persistent store
+    const saved = savePost(data);
+
+    // 2. Forward to external backend if available
     if (process.env.NEXT_PUBLIC_BACKEND_URL) {
       try {
-        const res = await axios.post(
+        await axios.post(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/save-extracted-data`,
           data,
-          { timeout: 4000 }
+          { timeout: 3000 }
         );
-        return NextResponse.json({ data: res.data.status || 'saved' }, { status: 200 });
       } catch (backendErr) {
-        console.warn('Backend save unavailable, returning local success:', backendErr);
+        console.warn('Backend save unavailable, saved to Antara local store');
       }
     }
 
-    return NextResponse.json({ data: 'saved_successfully' }, { status: 200 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: 'saved_successfully',
+        post: saved,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Save failed:', error);
     return NextResponse.json(

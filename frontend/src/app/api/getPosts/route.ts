@@ -1,52 +1,40 @@
-// app/api/posts/route.js
 import axios from 'axios';
 import { NextResponse } from 'next/server';
+import { getAllPosts } from '@/lib/posts-store';
 
-const mockPosts = [
-  {
-    id: 'post_1',
-    Name: 'Priya Sharma',
-    phone: '+91 98765 43210',
-    state: 'Delhi',
-    status: 'pending',
-    currentSituation: 'Immediate assistance required with local authority follow-up.',
-    occurrenceDuration: '2 weeks',
-    frequency: 'Daily',
-    visibleInjuries: 'Yes',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'post_2',
-    Name: 'Ananya Verma',
-    phone: '+91 98123 45678',
-    state: 'Maharashtra',
-    status: 'in-progress',
-    currentSituation: 'Counseling and legal advisory support requested.',
-    occurrenceDuration: '1 month',
-    frequency: 'Occasional',
-    visibleInjuries: 'No',
-    createdAt: new Date().toISOString(),
-  },
-];
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const localPosts = getAllPosts();
+
     if (process.env.NEXT_PUBLIC_BACKEND_URL) {
       try {
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/get-admin-posts`,
-          { timeout: 4000 }
+          { timeout: 3000 }
         );
-        if (response.status === 200 && response.data) {
-          return NextResponse.json(response.data, { status: 200 });
+        if (response.status === 200 && Array.isArray(response.data) && response.data.length > 0) {
+          // Merge local posts (newest first) with backend posts, avoiding duplicates
+          const seen = new Set(localPosts.map((p) => p._id));
+          const merged = [...localPosts];
+          for (const item of response.data) {
+            const id = item._id || item.id;
+            if (id && !seen.has(id)) {
+              merged.push(item);
+              seen.add(id);
+            }
+          }
+          return NextResponse.json(merged, { status: 200 });
         }
       } catch (backendErr) {
-        console.warn('Backend posts service unreachable, using fallback list');
+        console.warn('Backend posts service unreachable, serving local Antara posts');
       }
     }
 
-    return NextResponse.json(mockPosts, { status: 200 });
+    return NextResponse.json(localPosts, { status: 200 });
   } catch (error) {
-    return NextResponse.json(mockPosts, { status: 200 });
+    console.error('Error fetching posts:', error);
+    return NextResponse.json(getAllPosts(), { status: 200 });
   }
 }
