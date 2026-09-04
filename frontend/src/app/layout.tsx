@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Roboto } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
+import { shadcn } from '@clerk/ui/themes';
 import Navbar from '@/components/Navbar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from 'react-hot-toast';
@@ -23,12 +24,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider dynamic>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${roboto.className} antialiased`}
-          suppressHydrationWarning
-        >
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${roboto.className} antialiased`}
+        suppressHydrationWarning
+      >
+        <ClerkProvider dynamic appearance={{ theme: shadcn }}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -41,8 +42,8 @@ export default function RootLayout({
             </div>
             <Toaster />
           </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

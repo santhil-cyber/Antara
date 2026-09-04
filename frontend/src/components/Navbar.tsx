@@ -1,15 +1,14 @@
 'use client';
 import Link from 'next/link';
 import React from 'react';
-import { LoginDropdown } from './LoginDropdown';
 import { ModeToggle } from './ModeToggle';
-import SignOut from './SignOut';
 import { usePathname } from 'next/navigation';
-import { useClerk } from '@clerk/nextjs';
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser } from '@clerk/nextjs';
+import { Button } from './ui/button';
 
 function Navbar() {
   const pathname = usePathname(); // Get current path
-  const { user } = useClerk();
+  const { user } = useUser();
 
   // Function to check if a link is active
   const isActive = (href: string) => pathname === href;
@@ -71,14 +70,28 @@ function Navbar() {
             isActive('/therapybot')
               ? 'text-blue-700 font-semibold'
               : 'hover:text-blue-700'
-          } transition-colors duration-200`}
+            } transition-colors duration-200`}
         >
           Therapy Bot
         </Link>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <ModeToggle />
-        {!user ? <LoginDropdown /> : <SignOut />}
+        <SignedOut>
+          <SignInButton mode="modal">
+            <Button variant="outline" size="sm">
+              Sign In
+            </Button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <Button size="sm">
+              Sign Up
+            </Button>
+          </SignUpButton>
+        </SignedOut>
+        <SignedIn>
+          <UserButton afterSignOutUrl="/" />
+        </SignedIn>
       </div>
     </nav>
   );
