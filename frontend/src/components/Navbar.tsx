@@ -22,12 +22,16 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-function Navbar() {
+interface NavbarProps {
+  initialIsAdmin?: boolean;
+}
+
+function Navbar({ initialIsAdmin = false }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useUser();
 
-  const [isAdminSession, setIsAdminSession] = useState(false);
+  const [isAdminSession, setIsAdminSession] = useState(initialIsAdmin);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
